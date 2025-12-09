@@ -1,0 +1,55 @@
+Sub UpdateSheet1()
+
+    Dim ws1 As Worksheet, wsNew As Worksheet, wsOut As Worksheet
+    Dim lastRow As Long, i As Long
+    Dim memberNum As Variant, fRow As Variant
+    Dim aStr As String, last8 As String
+
+    Set ws1 = ThisWorkbook.Sheets("Sheet1")
+    Set wsNew = ThisWorkbook.Sheets("NewCustomer#sCreated")
+    Set wsOut = ThisWorkbook.Sheets("output (15)")
+
+    lastRow = ws1.Cells(ws1.Rows.Count, "A").End(xlUp).Row
+
+    For i = 2 To lastRow
+        ' --- Extract trailing 8 digits if they start with 600 ---
+        aStr = ws1.Cells(i, "A").Value
+        If Len(aStr) >= 8 Then
+            last8 = Right(aStr, 8)
+            If Left(last8, 3) = "600" And last8 Like "########" Then
+                ws1.Cells(i, "D").Value = last8
+            End If
+        End If
+
+        ' --- Today's date in text ---
+        ws1.Cells(i, "B").Value = Format(Date, "MM-DD-YYYY")
+
+        ' --- Lookup in NewCustomer#sCreated ---
+        memberNum = ws1.Cells(i, "E").Value
+        If Not IsEmpty(memberNum) Then
+            fRow = Application.Match(memberNum, wsNew.Columns("T"), 0)
+            If Not IsError(fRow) Then
+                ws1.Cells(i, "F").Value = wsNew.Cells(fRow, "G").Value & " " & wsNew.Cells(fRow, "E").Value
+            End If
+        End If
+
+        ' --- Lookup in output (15) ---
+        If Not IsEmpty(memberNum) Then
+            fRow = Application.Match(memberNum, wsOut.Columns("E"), 0)
+            If Not IsError(fRow) Then
+                ws1.Cells(i, "H").Value = wsOut.Cells(fRow, "D").Value
+            End If
+        End If
+        
+        ' --- Add "HKN" to Column I if Column A has a value ---
+        If ws1.Cells(i, "A").Value <> "" Then
+            ws1.Cells(i, "I").Value = "HKN"
+        End If
+        
+        If ws1.Cells(i, "A").Value <> "" Then
+    ws1.Cells(i, "L").Value = "Money On Account"
+    End If
+
+    Next i
+
+End Sub
