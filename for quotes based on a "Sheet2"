@@ -1,0 +1,56 @@
+Sub MatchAndCopyValuesWithLogic()
+    Dim ws1 As Worksheet, ws2 As Worksheet
+    Dim lastRow1 As Long, lastRow2 As Long
+    Dim i As Long, j As Long
+    Dim name1 As String, name2 As String
+    Dim valC As Variant
+    
+    'Set worksheets
+    Set ws1 = ThisWorkbook.Sheets("Sheet1")
+    Set ws2 = ThisWorkbook.Sheets("Sheet2")
+    
+    'Find last rows
+    lastRow1 = ws1.Cells(ws1.Rows.Count, "F").End(xlUp).Row
+    lastRow2 = ws2.Cells(ws2.Rows.Count, "B").End(xlUp).Row
+    
+    'Loop through Sheet2 column B
+    For i = 2 To lastRow2   'assuming row 1 is header
+        name2 = ws2.Cells(i, "B").Value
+        
+        'Search for match in Sheet1 column F
+        For j = 2 To lastRow1
+            name1 = ws1.Cells(j, "F").Value
+            
+            If StrComp(name1, name2, vbTextCompare) = 0 Then
+                'Copy values from Sheet2
+                ws1.Cells(j, "G").Value = ws2.Cells(i, "C").Value
+                ws1.Cells(j, "H").Value = ws2.Cells(i, "D").Value
+                
+                'Apply logic based on value in Sheet2 column C
+                valC = ws2.Cells(i, "C").Value
+                
+                Select Case valC
+                    Case 78
+                        ws1.Cells(j, "J").Value = "APPS"
+                        ws1.Cells(j, "K").Value = "Y"
+                        ws1.Cells(j, "N").Value = "STRAIGHT"
+                        ws1.Cells(j, "P").Value = 78
+                    Case 46
+                        ws1.Cells(j, "J").Value = "RENEWAL"
+                        ws1.Cells(j, "K").Value = "Y"
+                        ws1.Cells(j, "N").Value = "STRAIGHT"
+                        ws1.Cells(j, "P").Value = 46
+                    Case 175
+                        ws1.Cells(j, "J").Value = "NONRENEWAL"
+                        ws1.Cells(j, "K").Value = "N"
+                        ws1.Cells(j, "N").Value = "UPDATE"
+                        ws1.Cells(j, "P").Value = 175
+                End Select
+                
+                Exit For
+            End If
+        Next j
+    Next i
+    
+    MsgBox "Matching and logic complete!"
+End Sub
