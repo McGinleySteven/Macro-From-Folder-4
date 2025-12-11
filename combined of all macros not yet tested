@@ -1,0 +1,100 @@
+Sub UpdateSheet1Merged()
+
+    Dim ws1 As Worksheet, wsNew As Worksheet, wsOut As Worksheet
+    Dim lastRow As Long, i As Long
+    Dim memberNum As Variant, fRow As Variant
+    Dim aStr As String, last8 As String
+    Dim key As String
+    Dim rngOut As Range, cellFound As Range
+    Dim valC As Variant
+    
+    Set ws1 = ThisWorkbook.Sheets("Sheet1")
+    Set wsNew = ThisWorkbook.Sheets("NewCustomer#sCreated")
+    Set wsOut = ThisWorkbook.Sheets("output (15)")
+    
+    lastRow = ws1.Cells(ws1.Rows.Count, "A").End(xlUp).Row
+    
+    For i = 2 To lastRow
+        ' --- Extract trailing 8 digits if they start with 600 ---
+        aStr = ws1.Cells(i, "A").Value
+        If Len(aStr) >= 8 Then
+            last8 = Right(aStr, 8)
+            If Left(last8, 3) = "600" And last8 Like "########" Then
+                ws1.Cells(i, "D").Value = last8
+            End If
+        End If
+        
+        ' --- Today's date in text ---
+        ws1.Cells(i, "B").Value = Format(Date, "MM-DD-YYYY")
+        
+        ' --- Lookup in NewCustomer#sCreated ---
+        memberNum = ws1.Cells(i, "E").Value
+        If Not IsEmpty(memberNum) Then
+            fRow = Application.Match(memberNum, wsNew.Columns("T"), 0)
+            If Not IsError(fRow) Then
+                ' First + Last name into Column F
+                ws1.Cells(i, "F").Value = wsNew.Cells(fRow, "G").Value & " " & wsNew.Cells(fRow, "E").Value
+                
+                ' --- New logic: check Column X and Y in NewCustomer#sCreated ---
+                If UCase(Trim(wsNew.Cells(fRow, "X").Value)) = "Y" Then
+                    ws1.Cells(i, "J").Value = "APPS"
+                ElseIf UCase(Trim(wsNew.Cells(fRow, "Y").Value)) = "Y" Then
+                    ws1.Cells(i, "J").Value = "RENEWAL"
+                End If
+            End If
+        End If
+        
+        ' --- Lookup in output (15): match Sheet1!E to output(15)!A ---
+        key = Trim(CStr(ws1.Cells(i, "E").Value))
+        If key <> "" Then
+            Set rngOut = wsOut.Range("A:A")
+            Set cellFound = rngOut.Find(What:=key, LookIn:=xlValues, LookAt:=xlWhole, _
+                                        SearchOrder:=xlByRows, SearchDirection:=xlNext, MatchCase:=False)
+            If Not cellFound Is Nothing Then
+                ' Column D → Sheet1!H
+                ws1.Cells(i, "H").Value = wsOut.Cells(cellFound.Row, "D").Value
+                ' Column C → Sheet1!P and G
+                ws1.Cells(i, "P").Value = wsOut.Cells(cellFound.Row, "C").Value
+                ws1.Cells(i, "G").Value = wsOut.Cells(cellFound.Row, "C").Value
+            Else
+                ws1.Cells(i, "H").Value = ""
+                ws1.Cells(i, "P").Value = ""
+                ws1.Cells(i, "G").Value = ""
+            End If
+        End If
+        
+        ' --- Apply conditional rules based on value in Column G ---
+        valC = ws1.Cells(i, "G").Value
+        Select Case valC
+            Case 78
+                ws1.Cells(i, "J").Value = "APPS"
+                ws1.Cells(i, "K").Value = "Y"
+                ws1.Cells(i, "N").Value = "STRAIGHT"
+                ws1.Cells(i, "P").Value = 78
+            Case 46
+                ws1.Cells(i, "J").Value = "RENEWAL"
+                ws1.Cells(i, "K").Value = "Y"
+                ws1.Cells(i, "N").Value = "STRAIGHT"
+                ws1.Cells(i, "P").Value = 46
+            Case 175
+                ws1.Cells(i, "J").Value = "NONRENEWAL"
+                ws1.Cells(i, "K").Value = "N"
+                ws1.Cells(i, "N").Value = "UPDATE"
+                ws1.Cells(i, "P").Value = 175
+        End Select
+        
+        ' --- Add "HKN" to Column I if Column A has a value ---
+        If ws1.Cells(i, "A").Value <> "" Then
+            ws1.Cells(i, "I").Value = "HKN"
+        End If
+        
+        ' --- Add "Money On Account" to Column L if Column A has a value ---
+        If ws1.Cells(i, "A").Value <> "" Then
+            ws1.Cells(i, "L").Value = "Money On Account"
+        End If
+        
+    Next i
+    
+    MsgBox "Update complete!"
+    
+End Sub
